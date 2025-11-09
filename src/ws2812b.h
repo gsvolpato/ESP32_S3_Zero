@@ -2,6 +2,6 @@
 #define WS2812B_H
 
 void ws2812bSetup();
-void ws2812bUpdate();
+const char *ws2812bNextColor();
 
 #endif // WS2812B_H

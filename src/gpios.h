@@ -2,11 +2,12 @@
 #ifndef GPIOS_H
 #define GPIOS_H
 
-#include <Arduino.h>
-
-#define LED_PIN PIN_NEOPIXEL
+#define LED_PIN 21
 #define BOOT_BUTTON_PIN 0
 
-void gpiosSetup();
+
+void gpios_setup();
+
+
 
 #endif // GPIOS_H

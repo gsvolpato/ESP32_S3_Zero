@@ -2,12 +2,25 @@
 #include "gpios.h"
 #include "ws2812b.h"
 
+int previousBootButtonState = HIGH;
+
 void setup() {
     Serial.begin(115200);
-    gpiosSetup();
+    while (!Serial) {
+        delay(10);
+    }
+    gpios_setup();
     ws2812bSetup();
 }
 
 void loop() {
-    ws2812bUpdate();
+    int currentBootButtonState = digitalRead(BOOT_BUTTON_PIN);
+
+    if (currentBootButtonState == LOW && previousBootButtonState == HIGH) {
+        const char *colorName = ws2812bNextColor();
+        Serial.println(colorName);
+    }
+
+    previousBootButtonState = currentBootButtonState;
+    delay(5);
 }
