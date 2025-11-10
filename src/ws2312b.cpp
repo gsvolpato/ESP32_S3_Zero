@@ -14,28 +14,6 @@ struct RgbColor {
     uint8_t b;
 };
 
-constexpr RgbColor colorSequence[] = {
-    {255, 0, 0},
-    {0, 255, 0},
-    {0, 0, 255},
-    {255, 255, 0},
-    {0, 255, 255},
-    {255, 0, 255}
-};
-
-constexpr size_t colorSequenceLength = sizeof(colorSequence) / sizeof(colorSequence[0]);
-
-constexpr const char *colorNames[] = {
-    "Red",
-    "Green",
-    "Blue",
-    "Yellow",
-    "Cyan",
-    "Magenta"
-};
-
-size_t currentColorIndex = 0;
-
 void applyColor(const RgbColor &color) {
     led.setPixelColor(0, color.r, color.g, color.b);
     led.show();
@@ -46,41 +24,23 @@ void ws2812bSetup() {
     led.begin();
     led.setBrightness(64);
     led.clear();
-    applyColor(colorSequence[currentColorIndex]);
+    led.show();
 }
 
-const char *ws2812bGetCurrentColor() {
-    return colorNames[currentColorIndex];
-}
-
-const char *ws2812bNextColor() {
-    currentColorIndex = (currentColorIndex + 1) % colorSequenceLength;
-    applyColor(colorSequence[currentColorIndex]);
-    return colorNames[currentColorIndex];
-}
-
-void ws2812bPulse() {
-    const RgbColor &color = colorSequence[currentColorIndex];
-    constexpr uint8_t minBrightness = 5;
-    constexpr uint8_t maxBrightness = 255;
-    constexpr uint8_t step = 5;
-    constexpr uint16_t delayMs = 20;
+void ws2812bBlinkYellow() {
+    constexpr RgbColor yellow = {255, 255, 0};
+    constexpr uint16_t blinkDelayMs = 200;
     
-    for (int16_t brightness = minBrightness; brightness <= maxBrightness; brightness += step) {
-        uint8_t r = (color.r * brightness) / 255;
-        uint8_t g = (color.g * brightness) / 255;
-        uint8_t b = (color.b * brightness) / 255;
-        led.setPixelColor(0, r, g, b);
+    for (int i = 0; i < 3; i++) {
+        applyColor(yellow);
+        delay(blinkDelayMs);
+        led.clear();
         led.show();
-        delay(delayMs);
+        delay(blinkDelayMs);
     }
-    
-    for (int16_t brightness = maxBrightness; brightness >= minBrightness; brightness -= step) {
-        uint8_t r = (color.r * brightness) / 255;
-        uint8_t g = (color.g * brightness) / 255;
-        uint8_t b = (color.b * brightness) / 255;
-        led.setPixelColor(0, r, g, b);
-        led.show();
-        delay(delayMs);
-    }
+}
+
+void ws2812bTurnOff() {
+    led.clear();
+    led.show();
 }

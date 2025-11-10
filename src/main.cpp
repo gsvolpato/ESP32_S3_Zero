@@ -8,13 +8,12 @@ void setup() {
     delay(1000);
     gpios_setup();
     ws2812bSetup();
+    ws2812bBlinkYellow();
+    ws2812bTurnOff();
     oledSetup();
-    oledDisplayText(ws2812bGetCurrentColor());
+    oledDisplayText("Booted successfully!");
 }
 
 void loop() {
-    const char *colorName = ws2812bNextColor();
-    Serial.println(colorName);
-    oledDisplayText(colorName);
-    ws2812bPulse();
+    delay(100);
 }

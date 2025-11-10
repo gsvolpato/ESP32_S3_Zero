@@ -3,6 +3,5 @@
 #include "gpios.h"
 
 void gpios_setup() {
-    pinMode(LED_PIN, OUTPUT);
     pinMode(BOOT_BUTTON_PIN, INPUT_PULLUP);
 }

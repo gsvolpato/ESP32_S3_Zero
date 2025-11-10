@@ -16,14 +16,18 @@ Adafruit_SSD1306 display(screenWidth, screenHeight, &Wire, oledReset);
 
 void oledSetup() {
     Wire.begin(OLED_SDA_PIN, OLED_SCL_PIN);
+    delay(10);
     
     if (!display.begin(SSD1306_SWITCHCAPVCC, 0x3C)) {
         Serial.println(F("SSD1306 allocation failed"));
-        return;
+        for (;;) {
+            delay(1000);
+        }
     }
     
     display.setRotation(2);
     display.clearDisplay();
+    display.display();
 }
 
 void oledDisplayText(const char *text) {

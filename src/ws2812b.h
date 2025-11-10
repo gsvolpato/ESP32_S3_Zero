@@ -2,8 +2,7 @@
 #define WS2812B_H
 
 void ws2812bSetup();
-const char *ws2812bGetCurrentColor();
-const char *ws2812bNextColor();
-void ws2812bPulse();
+void ws2812bBlinkYellow();
+void ws2812bTurnOff();
 
 #endif // WS2812B_H
