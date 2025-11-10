@@ -24,7 +24,7 @@ void oledSetup() {
     
     display.setRotation(2);
     display.clearDisplay();
-    display.setTextSize(2);
+    display.setTextSize(1);
     display.setTextColor(SSD1306_WHITE);
     display.setCursor(0, 0);
     display.println(F("Hello World"));
@@ -33,7 +33,7 @@ void oledSetup() {
 
 void oledDisplayText(const char *text) {
     display.clearDisplay();
-    display.setTextSize(2);
+    display.setTextSize(1);
     display.setTextColor(SSD1306_WHITE);
     display.setCursor(0, 0);
     display.println(text);
