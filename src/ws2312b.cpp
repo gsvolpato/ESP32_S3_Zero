@@ -49,6 +49,10 @@ void ws2812bSetup() {
     applyColor(colorSequence[currentColorIndex]);
 }
 
+const char *ws2812bGetCurrentColor() {
+    return colorNames[currentColorIndex];
+}
+
 const char *ws2812bNextColor() {
     currentColorIndex = (currentColorIndex + 1) % colorSequenceLength;
     applyColor(colorSequence[currentColorIndex]);
