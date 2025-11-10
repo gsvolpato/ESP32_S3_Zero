@@ -6,9 +6,7 @@ int previousBootButtonState = HIGH;
 
 void setup() {
     Serial.begin(115200);
-    while (!Serial) {
-        delay(10);
-    }
+    delay(10000);
     gpios_setup();
     ws2812bSetup();
 }
