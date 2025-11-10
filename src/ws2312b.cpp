@@ -54,3 +54,29 @@ const char *ws2812bNextColor() {
     applyColor(colorSequence[currentColorIndex]);
     return colorNames[currentColorIndex];
 }
+
+void ws2812bPulse() {
+    const RgbColor &color = colorSequence[currentColorIndex];
+    constexpr uint8_t minBrightness = 5;
+    constexpr uint8_t maxBrightness = 255;
+    constexpr uint8_t step = 5;
+    constexpr uint16_t delayMs = 20;
+    
+    for (int16_t brightness = minBrightness; brightness <= maxBrightness; brightness += step) {
+        uint8_t r = (color.r * brightness) / 255;
+        uint8_t g = (color.g * brightness) / 255;
+        uint8_t b = (color.b * brightness) / 255;
+        led.setPixelColor(0, r, g, b);
+        led.show();
+        delay(delayMs);
+    }
+    
+    for (int16_t brightness = maxBrightness; brightness >= minBrightness; brightness -= step) {
+        uint8_t r = (color.r * brightness) / 255;
+        uint8_t g = (color.g * brightness) / 255;
+        uint8_t b = (color.b * brightness) / 255;
+        led.setPixelColor(0, r, g, b);
+        led.show();
+        delay(delayMs);
+    }
+}

@@ -4,7 +4,7 @@
 
 void setup() {
     Serial.begin(115200);
-    delay(10000);
+    delay(1000);
     gpios_setup();
     ws2812bSetup();
 }
@@ -12,5 +12,5 @@ void setup() {
 void loop() {
     const char *colorName = ws2812bNextColor();
     Serial.println(colorName);
-    delay(1000);
+    ws2812bPulse();
 }
