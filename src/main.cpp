@@ -30,9 +30,17 @@ void setup() {
     } else {
         const char *mpuStatus = mpu6050Connected ? "MPU6050: OK" : "MPU6050: FAIL";
         oledDisplayLines("Boot: OK", mpuStatus);
+        delay(2000);
+        oledClear();
     }
 }
 
 void loop() {
+    Mpu6050Data data;
+    if (mpu6050GetData(&data)) {
+        oledDisplayMpu6050Data(data.pitch, data.roll,
+                               data.gyroX, data.gyroY, data.gyroZ, 
+                               data.temperature);
+    }
     delay(100);
 }

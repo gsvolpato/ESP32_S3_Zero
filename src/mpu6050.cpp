@@ -3,21 +3,18 @@
 #include <Wire.h>
 #include <Adafruit_MPU6050.h>
 #include <Adafruit_Sensor.h>
+#include <math.h>
 #include "gpios.h"
 #include "mpu6050.h"
 
 namespace {
-TwoWire mpuWire(1);
 Adafruit_MPU6050 mpu;
 bool isInitialized = false;
 bool isConnected = false;
 } // namespace
 
 bool mpu6050Setup() {
-    mpuWire.begin(MPU6050_SDA_PIN, MPU6050_SCL_PIN);
-    delay(10);
-    
-    if (!mpu.begin(0x68, &mpuWire)) {
+    if (!mpu.begin()) {
         isInitialized = false;
         isConnected = false;
         return false;
@@ -37,9 +34,38 @@ bool mpu6050IsConnected() {
         return false;
     }
     
-    mpuWire.beginTransmission(0x68);
-    uint8_t error = mpuWire.endTransmission();
+    Wire.beginTransmission(0x68);
+    uint8_t error = Wire.endTransmission();
     isConnected = (error == 0);
     return isConnected;
+}
+
+bool mpu6050GetData(Mpu6050Data *data) {
+    if (!isInitialized || !isConnected) {
+        return false;
+    }
+    
+    sensors_event_t accel;
+    sensors_event_t gyro;
+    sensors_event_t temp;
+    
+    if (!mpu.getEvent(&accel, &gyro, &temp)) {
+        return false;
+    }
+    
+    data->accelX = accel.acceleration.x;
+    data->accelY = accel.acceleration.y;
+    data->accelZ = accel.acceleration.z;
+    data->gyroX = gyro.gyro.x;
+    data->gyroY = gyro.gyro.y;
+    data->gyroZ = gyro.gyro.z;
+    data->temperature = temp.temperature;
+    
+    constexpr float radToDeg = 180.0 / M_PI;
+    
+    data->pitch = atan2(data->accelX, sqrt(data->accelY * data->accelY + data->accelZ * data->accelZ)) * radToDeg;
+    data->roll = atan2(data->accelY, sqrt(data->accelX * data->accelX + data->accelZ * data->accelZ)) * radToDeg;
+    
+    return true;
 }
 
