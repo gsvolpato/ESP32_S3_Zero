@@ -41,6 +41,18 @@ void loop() {
         oledDisplayMpu6050Data(data.pitch, data.roll,
                                data.gyroX, data.gyroY, data.gyroZ, 
                                data.temperature);
+        
+        // Serial output for axis verification
+        Serial.print("Pitch: ");
+        Serial.print(data.pitch, 2);
+        Serial.print(" deg  |  Roll: ");
+        Serial.print(data.roll, 2);
+        Serial.print(" deg  |  Accel X: ");
+        Serial.print(data.accelX, 2);
+        Serial.print("  Y: ");
+        Serial.print(data.accelY, 2);
+        Serial.print("  Z: ");
+        Serial.println(data.accelZ, 2);
     }
     delay(100);
 }

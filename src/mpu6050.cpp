@@ -63,8 +63,11 @@ bool mpu6050GetData(Mpu6050Data *data) {
     
     constexpr float radToDeg = 180.0 / M_PI;
     
-    data->pitch = atan2(data->accelX, sqrt(data->accelY * data->accelY + data->accelZ * data->accelZ)) * radToDeg;
-    data->roll = atan2(data->accelY, sqrt(data->accelX * data->accelX + data->accelZ * data->accelZ)) * radToDeg;
+    // Inverted to match standard level conventions:
+    // Right tilt = positive roll, Left tilt = negative roll
+    // Forward tilt = positive pitch, Backward tilt = negative pitch
+    data->pitch = -atan2(data->accelX, sqrt(data->accelY * data->accelY + data->accelZ * data->accelZ)) * radToDeg;
+    data->roll = -atan2(data->accelY, sqrt(data->accelX * data->accelX + data->accelZ * data->accelZ)) * radToDeg;
     
     return true;
 }
