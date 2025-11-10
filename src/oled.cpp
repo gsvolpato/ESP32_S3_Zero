@@ -14,20 +14,19 @@ constexpr int oledReset = -1;
 Adafruit_SSD1306 display(screenWidth, screenHeight, &Wire, oledReset);
 } // namespace
 
-void oledSetup() {
+bool oledSetup() {
     Wire.begin(OLED_SDA_PIN, OLED_SCL_PIN);
     delay(10);
     
     if (!display.begin(SSD1306_SWITCHCAPVCC, 0x3C)) {
         Serial.println(F("SSD1306 allocation failed"));
-        for (;;) {
-            delay(1000);
-        }
+        return false;
     }
     
     display.setRotation(2);
     display.clearDisplay();
     display.display();
+    return true;
 }
 
 void oledDisplayText(const char *text) {
@@ -36,6 +35,17 @@ void oledDisplayText(const char *text) {
     display.setTextColor(SSD1306_WHITE);
     display.setCursor(0, 0);
     display.println(text);
+    display.display();
+}
+
+void oledDisplayLines(const char *line1, const char *line2) {
+    display.clearDisplay();
+    display.setTextSize(1);
+    display.setTextColor(SSD1306_WHITE);
+    display.setCursor(0, 0);
+    display.println(line1);
+    display.setCursor(0, 16);
+    display.println(line2);
     display.display();
 }
 

@@ -20,11 +20,12 @@ void applyColor(const RgbColor &color) {
 }
 } // namespace
 
-void ws2812bSetup() {
+bool ws2812bSetup() {
     led.begin();
     led.setBrightness(64);
     led.clear();
     led.show();
+    return true;
 }
 
 void ws2812bBlinkYellow() {
