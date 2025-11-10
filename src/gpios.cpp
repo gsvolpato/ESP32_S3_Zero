@@ -4,4 +4,7 @@
 
 void gpios_setup() {
     pinMode(BOOT_BUTTON_PIN, INPUT_PULLUP);
+    pinMode(MPU6050_AD0_PIN, OUTPUT);
+    digitalWrite(MPU6050_AD0_PIN, LOW);
+    pinMode(MPU6050_INT_PIN, INPUT_PULLUP);
 }
