@@ -1,6 +1,7 @@
 #define DISABLE_ALL_LIBRARY_WARNINGS
 #include <Arduino.h>
 #include <Wire.h>
+#include <string.h>
 #include <Adafruit_SSD1306.h>
 #include <Adafruit_GFX.h>
 #include "gpios.h"
@@ -61,7 +62,7 @@ void oledDisplayMpu6050Data(float pitch, float roll, float gyroX, float gyroY, f
     
     // Blue area is y=0-47 (48 pixels), yellow strip is y=48-63 (16 pixels)
     constexpr int blueAreaHeight = 48;
-    constexpr float tiltThreshold = 5.0; // Show level when tilt > 5 degrees
+    constexpr float tiltThreshold = 30.0; // Show water level when tilt > 30 degrees
     
     // Check if device is tilted enough to show level (not flat on table)
     float absPitch = fabs(pitch);
@@ -144,8 +145,83 @@ void oledDisplayMpu6050Data(float pitch, float roll, float gyroX, float gyroY, f
                 display.drawPixel(x, y, onWaterSide ? SSD1306_WHITE : SSD1306_BLACK);
             }
         }
+    } else {
+        // Apple-style two-circle level for flat/near-flat orientation
+        float centerX = screenWidth / 2.0;
+        float centerY = blueAreaHeight / 2.0;
+        
+        // Calculate tilt magnitude and direction
+        float tiltMagnitude = sqrt(pitch * pitch + roll * roll);
+        
+        // Fill screen with white when perfectly level (0°)
+        if (tiltMagnitude < 0.5) {
+            // Fill the blue area with white to indicate perfect level
+            display.fillRect(0, 0, screenWidth, blueAreaHeight, SSD1306_WHITE);
+        } else {
+            // Circle parameters
+            constexpr int circleRadius = 20;
+            constexpr float maxOffset = 8.0; // Maximum offset for circles based on tilt
+            constexpr float maxTiltForCircles = 30.0; // Use circles up to 30 degrees
+            
+            float tiltDirectionRad = atan2(pitch, roll);
+            
+            // Normalize tilt for circle offset (0-30 degrees maps to 0-maxOffset)
+            float normalizedTilt = constrain(tiltMagnitude / maxTiltForCircles, 0.0, 1.0);
+            float offsetDistance = normalizedTilt * maxOffset;
+            
+            // Calculate offset for the two circles
+            // Circle 1 offset: opposite to tilt direction (top-left when tilted)
+            // Circle 2 offset: same as tilt direction (bottom-right when tilted)
+            float circle1OffsetX = -cos(tiltDirectionRad) * offsetDistance;
+            float circle1OffsetY = -sin(tiltDirectionRad) * offsetDistance;
+            float circle2OffsetX = cos(tiltDirectionRad) * offsetDistance;
+            float circle2OffsetY = sin(tiltDirectionRad) * offsetDistance;
+            
+            int circle1X = centerX + circle1OffsetX;
+            int circle1Y = centerY + circle1OffsetY;
+            int circle2X = centerX + circle2OffsetX;
+            int circle2Y = centerY + circle2OffsetY;
+            
+            // Draw two white circles
+            display.drawCircle(circle1X, circle1Y, circleRadius, SSD1306_WHITE);
+            display.drawCircle(circle2X, circle2Y, circleRadius, SSD1306_WHITE);
+            
+            // Calculate and fill the intersection (black bubble)
+            // The intersection is where both circles overlap
+            for (int y = 0; y < blueAreaHeight; y++) {
+                for (int x = 0; x < screenWidth; x++) {
+                    // Distance from pixel to center of each circle
+                    float dist1 = sqrt((x - circle1X) * (x - circle1X) + (y - circle1Y) * (y - circle1Y));
+                    float dist2 = sqrt((x - circle2X) * (x - circle2X) + (y - circle2Y) * (y - circle2Y));
+                    
+                    // Pixel is in intersection if it's inside both circles
+                    if (dist1 <= circleRadius && dist2 <= circleRadius) {
+                        display.drawPixel(x, y, SSD1306_BLACK);
+                    }
+                }
+            }
+            
+            // Draw circles again to ensure clean edges
+            display.drawCircle(circle1X, circle1Y, circleRadius, SSD1306_WHITE);
+            display.drawCircle(circle2X, circle2Y, circleRadius, SSD1306_WHITE);
+            
+            // Display tilt angle in the bubble (intersection center)
+            float bubbleCenterX = (circle1X + circle2X) / 2.0;
+            float bubbleCenterY = (circle1Y + circle2Y) / 2.0;
+            
+            // Show angle with degree symbol
+            int displayAngle = (int)round(tiltMagnitude);
+            display.setTextSize(1);
+            display.setTextColor(SSD1306_WHITE);
+            snprintf(buffer, sizeof(buffer), "%d", displayAngle);
+            int textWidth = strlen(buffer) * 6; // Approximate character width
+            display.setCursor(bubbleCenterX - textWidth / 2 - 3, bubbleCenterY - 3);
+            display.print(buffer);
+            // Draw degree symbol (small circle)
+            display.setCursor(bubbleCenterX + textWidth / 2 - 1, bubbleCenterY - 4);
+            display.print("o");
+        }
     }
-    // If flat (both angles < threshold), blue area remains black (nothing displayed)
     
     // Display compact format on yellow strip at bottom (y=48-63, 16 pixels)
     display.setTextSize(1);
