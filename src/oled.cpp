@@ -182,26 +182,26 @@ void oledDisplayMpu6050Data(float pitch, float roll, float gyroX, float gyroY, f
             int circle2X = centerX + circle2OffsetX;
             int circle2Y = centerY + circle2OffsetY;
             
-            // Draw two white circles
-            display.drawCircle(circle1X, circle1Y, circleRadius, SSD1306_WHITE);
-            display.drawCircle(circle2X, circle2Y, circleRadius, SSD1306_WHITE);
+            // Fill both circles with white
+            display.fillCircle(circle1X, circle1Y, circleRadius, SSD1306_WHITE);
+            display.fillCircle(circle2X, circle2Y, circleRadius, SSD1306_WHITE);
             
-            // Calculate and fill the intersection (black bubble)
-            // The intersection is where both circles overlap
+            // Calculate and unfill the intersection (black bubble) so text is visible
+            // The intersection is where both circles overlap - leave this area black
             for (int y = 0; y < blueAreaHeight; y++) {
                 for (int x = 0; x < screenWidth; x++) {
                     // Distance from pixel to center of each circle
                     float dist1 = sqrt((x - circle1X) * (x - circle1X) + (y - circle1Y) * (y - circle1Y));
                     float dist2 = sqrt((x - circle2X) * (x - circle2X) + (y - circle2Y) * (y - circle2Y));
                     
-                    // Pixel is in intersection if it's inside both circles
+                    // Pixel is in intersection if it's inside both circles - make it black
                     if (dist1 <= circleRadius && dist2 <= circleRadius) {
                         display.drawPixel(x, y, SSD1306_BLACK);
                     }
                 }
             }
             
-            // Draw circles again to ensure clean edges
+            // Draw circle outlines to ensure clean edges
             display.drawCircle(circle1X, circle1Y, circleRadius, SSD1306_WHITE);
             display.drawCircle(circle2X, circle2Y, circleRadius, SSD1306_WHITE);
             
