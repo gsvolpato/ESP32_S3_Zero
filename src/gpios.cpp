@@ -4,4 +4,7 @@
 
 void gpios_setup() {
     pinMode(BOOT_BUTTON_PIN, INPUT_PULLUP);
+    pinMode(BUTTON_UP_PIN, INPUT_PULLUP);
+    pinMode(BUTTON_ENTER_PIN, INPUT_PULLUP);
+    pinMode(BUTTON_DOWN_PIN, INPUT_PULLUP);
 }

@@ -182,26 +182,26 @@ void oledDisplayMpu6050Data(float pitch, float roll, float gyroX, float gyroY, f
             int circle2X = centerX + circle2OffsetX;
             int circle2Y = centerY + circle2OffsetY;
             
-            // Draw two white circles
-            display.drawCircle(circle1X, circle1Y, circleRadius, SSD1306_WHITE);
-            display.drawCircle(circle2X, circle2Y, circleRadius, SSD1306_WHITE);
+            // Fill both circles with white
+            display.fillCircle(circle1X, circle1Y, circleRadius, SSD1306_WHITE);
+            display.fillCircle(circle2X, circle2Y, circleRadius, SSD1306_WHITE);
             
-            // Calculate and fill the intersection (black bubble)
-            // The intersection is where both circles overlap
+            // Calculate and unfill the intersection (black bubble) so text is visible
+            // The intersection is where both circles overlap - leave this area black
             for (int y = 0; y < blueAreaHeight; y++) {
                 for (int x = 0; x < screenWidth; x++) {
                     // Distance from pixel to center of each circle
                     float dist1 = sqrt((x - circle1X) * (x - circle1X) + (y - circle1Y) * (y - circle1Y));
                     float dist2 = sqrt((x - circle2X) * (x - circle2X) + (y - circle2Y) * (y - circle2Y));
                     
-                    // Pixel is in intersection if it's inside both circles
+                    // Pixel is in intersection if it's inside both circles - make it black
                     if (dist1 <= circleRadius && dist2 <= circleRadius) {
                         display.drawPixel(x, y, SSD1306_BLACK);
                     }
                 }
             }
             
-            // Draw circles again to ensure clean edges
+            // Draw circle outlines to ensure clean edges
             display.drawCircle(circle1X, circle1Y, circleRadius, SSD1306_WHITE);
             display.drawCircle(circle2X, circle2Y, circleRadius, SSD1306_WHITE);
             
@@ -230,6 +230,63 @@ void oledDisplayMpu6050Data(float pitch, float roll, float gyroX, float gyroY, f
     snprintf(buffer, sizeof(buffer), "T %dC X %d  Y %d", 
              (int)temperature, (int)pitch, (int)roll);
     display.println(buffer);
+    
+    display.display();
+}
+
+void oledDisplayMenu(int selectedIndex, const char* line1, const char* line2) {
+    display.clearDisplay();
+    display.setTextSize(1);
+    display.setTextColor(SSD1306_WHITE);
+    
+    // Display first line
+    display.setCursor(0, 0);
+    display.print(line1);
+    if (selectedIndex == 0) {
+        display.print(" <");
+    }
+    
+    // Display second line
+    display.setCursor(0, 16);
+    display.print(line2);
+    if (selectedIndex == 1) {
+        display.print(" <");
+    }
+    
+    display.display();
+}
+
+void oledDisplayCompass(float heading) {
+    display.clearDisplay();
+    
+    constexpr int centerX = screenWidth / 2;
+    constexpr int centerY = screenHeight / 2;
+    constexpr int radius = 25;
+    
+    display.drawCircle(centerX, centerY, radius, SSD1306_WHITE);
+    display.drawCircle(centerX, centerY, radius + 1, SSD1306_WHITE);
+    
+    constexpr float degToRad = M_PI / 180.0;
+    float headingRad = heading * degToRad;
+    
+    int needleX = centerX + (int)(cos(headingRad) * radius * 0.8);
+    int needleY = centerY + (int)(sin(headingRad) * radius * 0.8);
+    
+    display.drawLine(centerX, centerY, needleX, needleY, SSD1306_WHITE);
+    
+    display.fillCircle(centerX, centerY, 2, SSD1306_WHITE);
+    
+    display.setTextSize(1);
+    display.setTextColor(SSD1306_WHITE);
+    
+    char buffer[32];
+    snprintf(buffer, sizeof(buffer), "%.1f deg", heading);
+    int textWidth = strlen(buffer) * 6;
+    display.setCursor(centerX - textWidth / 2, centerY + radius + 5);
+    display.print(buffer);
+    
+    display.setCursor(centerX - 2, centerY - radius - 10);
+    display.print("N");
     
     display.display();
 }
