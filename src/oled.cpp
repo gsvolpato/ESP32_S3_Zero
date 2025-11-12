@@ -16,7 +16,7 @@ Adafruit_SSD1306 display(screenWidth, screenHeight, &Wire, oledReset);
 } // namespace
 
 bool oledSetup() {
-    Wire.begin(OLED_SDA_PIN, OLED_SCL_PIN);
+    Wire.begin(I2C_SDA_PIN, I2C_SCL_PIN);
     delay(10);
     
     if (!display.begin(SSD1306_SWITCHCAPVCC, 0x3C)) {
@@ -234,7 +234,7 @@ void oledDisplayMpu6050Data(float pitch, float roll, float gyroX, float gyroY, f
     display.display();
 }
 
-void oledDisplayMenu(int selectedIndex, const char* line1, const char* line2) {
+void oledDisplayMenu(int selectedIndex, const char* line1, const char* line2, const char* line3) {
     display.clearDisplay();
     display.setTextSize(1);
     display.setTextColor(SSD1306_WHITE);
@@ -253,6 +253,13 @@ void oledDisplayMenu(int selectedIndex, const char* line1, const char* line2) {
         display.print(" <");
     }
     
+    // Display third line
+    display.setCursor(0, 32);
+    display.print(line3);
+    if (selectedIndex == 2) {
+        display.print(" <");
+    }
+    
     display.display();
 }
 
@@ -261,32 +268,120 @@ void oledDisplayCompass(float heading) {
     
     constexpr int centerX = screenWidth / 2;
     constexpr int centerY = screenHeight / 2;
-    constexpr int radius = 25;
-    
-    display.drawCircle(centerX, centerY, radius, SSD1306_WHITE);
-    display.drawCircle(centerX, centerY, radius + 1, SSD1306_WHITE);
-    
+    constexpr int radius = 24;
     constexpr float degToRad = M_PI / 180.0;
-    float headingRad = heading * degToRad;
     
-    int needleX = centerX + (int)(cos(headingRad) * radius * 0.8);
-    int needleY = centerY + (int)(sin(headingRad) * radius * 0.8);
+    // Draw outer compass circle
+    display.drawCircle(centerX, centerY, radius, SSD1306_WHITE);
     
-    display.drawLine(centerX, centerY, needleX, needleY, SSD1306_WHITE);
-    
-    display.fillCircle(centerX, centerY, 2, SSD1306_WHITE);
-    
+    // Draw fixed compass rose - N, E, S, W markers (these stay fixed)
     display.setTextSize(1);
     display.setTextColor(SSD1306_WHITE);
     
+    // North marker at top (screen top, which is physical bottom due to rotation)
+    display.setCursor(centerX - 2, centerY - radius - 7);
+    display.print("N");
+    
+    // East marker at right
+    display.setCursor(centerX + radius + 2, centerY - 3);
+    display.print("E");
+    
+    // South marker at bottom
+    display.setCursor(centerX - 2, centerY + radius + 8);
+    display.print("S");
+    
+    // West marker at left
+    display.setCursor(centerX - radius - 8, centerY - 3);
+    display.print("W");
+    
+    // Draw tick marks for cardinal directions
+    constexpr int tickLength = 4;
+    display.drawLine(centerX, centerY - radius, centerX, centerY - radius + tickLength, SSD1306_WHITE);
+    display.drawLine(centerX + radius, centerY, centerX + radius - tickLength, centerY, SSD1306_WHITE);
+    display.drawLine(centerX, centerY + radius, centerX, centerY + radius - tickLength, SSD1306_WHITE);
+    display.drawLine(centerX - radius, centerY, centerX - radius + tickLength, centerY, SSD1306_WHITE);
+    
+    // Calculate arrow direction
+    // Compass heading: 0° = North, 90° = East, 180° = South, 270° = West
+    // Screen coordinates: 0° = right (+X), 90° = down (+Y), 180° = left (-X), 270° = up (-Y)
+    // Display is rotated 180° (rotation 2), so screen is flipped
+    // For heading 0° (North), arrow should point up on physical = down on screen = 90°
+    // Convert: arrowAngle = (heading + 90) * degToRad to account for rotation
+    float arrowAngle = (heading + 90.0) * degToRad;
+    
+    // Draw rotating arrow pointing in heading direction
+    // Arrow consists of: main line, arrowhead (triangle), and tail
+    constexpr int arrowLength = radius - 4;
+    constexpr int arrowHeadSize = 5;
+    constexpr int tailLength = 8;
+    
+    // Main arrow line (from center to edge)
+    int arrowTipX = centerX + (int)(cos(arrowAngle) * arrowLength);
+    int arrowTipY = centerY + (int)(sin(arrowAngle) * arrowLength);
+    
+    // Draw main arrow shaft
+    display.drawLine(centerX, centerY, arrowTipX, arrowTipY, SSD1306_WHITE);
+    
+    // Draw arrowhead (triangle pointing forward)
+    float perpAngle = arrowAngle + M_PI / 2.0;
+    int headBase1X = arrowTipX - (int)(cos(arrowAngle) * arrowHeadSize) + (int)(cos(perpAngle) * 3);
+    int headBase1Y = arrowTipY - (int)(sin(arrowAngle) * arrowHeadSize) + (int)(sin(perpAngle) * 3);
+    int headBase2X = arrowTipX - (int)(cos(arrowAngle) * arrowHeadSize) - (int)(cos(perpAngle) * 3);
+    int headBase2Y = arrowTipY - (int)(sin(arrowAngle) * arrowHeadSize) - (int)(sin(perpAngle) * 3);
+    
+    // Draw arrowhead triangle
+    display.drawLine(arrowTipX, arrowTipY, headBase1X, headBase1Y, SSD1306_WHITE);
+    display.drawLine(arrowTipX, arrowTipY, headBase2X, headBase2Y, SSD1306_WHITE);
+    display.drawLine(headBase1X, headBase1Y, headBase2X, headBase2Y, SSD1306_WHITE);
+    
+    // Draw arrow tail (opposite direction)
+    int tailX = centerX - (int)(cos(arrowAngle) * tailLength);
+    int tailY = centerY - (int)(sin(arrowAngle) * tailLength);
+    display.drawLine(centerX, centerY, tailX, tailY, SSD1306_WHITE);
+    
+    // Draw center pivot point
+    display.fillCircle(centerX, centerY, 3, SSD1306_WHITE);
+    display.drawCircle(centerX, centerY, 3, SSD1306_BLACK);
+    
+    // Display heading value at bottom
     char buffer[32];
-    snprintf(buffer, sizeof(buffer), "%.1f deg", heading);
+    snprintf(buffer, sizeof(buffer), "%.0f deg", heading);
     int textWidth = strlen(buffer) * 6;
-    display.setCursor(centerX - textWidth / 2, centerY + radius + 5);
+    display.setCursor(centerX - textWidth / 2, screenHeight - 8);
     display.print(buffer);
     
-    display.setCursor(centerX - 2, centerY - radius - 10);
-    display.print("N");
+    display.display();
+}
+
+void oledDisplayDistance(uint16_t distanceMm) {
+    display.clearDisplay();
+    display.setTextSize(1);
+    display.setTextColor(SSD1306_WHITE);
+    
+    // Display title
+    display.setCursor(0, 0);
+    display.print("Distance");
+    
+    // Display distance in mm
+    char buffer[32];
+    if (distanceMm > 0) {
+        if (distanceMm >= 1000) {
+            // Display in meters with 2 decimal places
+            float distanceM = distanceMm / 1000.0;
+            snprintf(buffer, sizeof(buffer), "%.2f m", distanceM);
+        } else {
+            // Display in millimeters
+            snprintf(buffer, sizeof(buffer), "%d mm", distanceMm);
+        }
+    } else {
+        snprintf(buffer, sizeof(buffer), "No reading");
+    }
+    
+    // Center the distance text
+    int textWidth = strlen(buffer) * 6;
+    int centerX = screenWidth / 2;
+    display.setCursor(centerX - textWidth / 2, 24);
+    display.print(buffer);
     
     display.display();
 }

@@ -93,6 +93,42 @@ bool compassGetData(CompassData *data) {
         return false;
     }
     
+    uint8_t status = 0;
+    bool dataReady = false;
+    
+    // Try to check status register with retries (up to 3 attempts)
+    for (int retry = 0; retry < 3; retry++) {
+        Wire.beginTransmission(compassAddress);
+        Wire.write(QMC5883L_REG_STATUS);
+        uint8_t error = Wire.endTransmission(false);
+        if (error != 0) {
+            if (error == 5) {
+                isConnected = false;
+            }
+            // If status read fails, just proceed to read data anyway
+            break;
+        }
+        
+        uint8_t bytesReceived = Wire.requestFrom(compassAddress, (uint8_t)1, (uint8_t)true);
+        if (bytesReceived == 1) {
+            status = Wire.read();
+            // Check if data is ready (bit 0 = DOR)
+            if (status & 0x01) {
+                dataReady = true;
+                break;
+            }
+        }
+        
+        // Small delay before retry
+        if (retry < 2) {
+            delay(1);
+        }
+    }
+    
+    // If status check failed or data not ready after retries, read anyway
+    // (the sensor might update faster than we can check)
+    
+    // Read the data registers
     Wire.beginTransmission(compassAddress);
     Wire.write(QMC5883L_REG_DATA);
     uint8_t error = Wire.endTransmission(false);
@@ -108,6 +144,7 @@ bool compassGetData(CompassData *data) {
         return false;
     }
     
+    // Read X, Y, Z values (LSB first for QMC5883L)
     int16_t x = Wire.read();
     x |= Wire.read() << 8;
     int16_t y = Wire.read();
@@ -119,6 +156,7 @@ bool compassGetData(CompassData *data) {
     data->y = y;
     data->z = z;
     
+    // Validate data
     if (data->x == 0 && data->y == 0 && data->z == 0) {
         return false;
     }
@@ -127,6 +165,14 @@ bool compassGetData(CompassData *data) {
         return false;
     }
     
+    // Check for overflow (status bit 2 = OVL) - only if we got valid status
+    if (dataReady && (status & 0x04)) {
+        // Data overflow, skip this reading
+        return false;
+    }
+    
+    // Calculate heading
+    // QMC5883L: X points to North, Y points to East when device is level
     float headingRad = atan2(data->y, data->x);
     float headingDeg = headingRad * 180.0 / M_PI;
     

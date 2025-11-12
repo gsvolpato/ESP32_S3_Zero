@@ -5,9 +5,11 @@
 #include "mpu6050.h"
 #include "buttons.h"
 #include "compass.h"
+#include "vl53l0x.h"
 
 enum AppMode {
     MODE_MENU,
+    MODE_DISTANCE,
     MODE_COMPASS,
     MODE_LEVEL
 };
@@ -15,7 +17,7 @@ enum AppMode {
 namespace {
     AppMode currentMode = MODE_MENU;
     int menuSelection = 0;
-    constexpr int MENU_OPTIONS = 2;
+    constexpr int MENU_OPTIONS = 3;
     unsigned long lastUpdateTime = 0;
     constexpr unsigned long UPDATE_INTERVAL = 100;
 } // namespace
@@ -42,6 +44,7 @@ void setup() {
     
     bool mpu6050Connected = mpu6050Setup();
     bool compassConnected = compassSetup();
+    bool distanceSensorConnected = vl53l0x_init();
     
     if (bootError) {
         oledDisplayText("Boot ERROR!");
@@ -54,9 +57,15 @@ void setup() {
         Serial.println("Compass: Not connected");
     }
     
+    if (distanceSensorConnected) {
+        Serial.println("Distance Sensor: Ready");
+    } else {
+        Serial.println("Distance Sensor: Not connected");
+    }
+    
     currentMode = MODE_MENU;
     menuSelection = 0;
-    oledDisplayMenu(menuSelection, "Compass", "Level");
+    oledDisplayMenu(menuSelection, "Distance", "Level", "Compass");
 }
 
 void handleMenuMode() {
@@ -65,19 +74,21 @@ void handleMenuMode() {
     switch (buttonState) {
         case BUTTON_UP_PRESSED:
             menuSelection = (menuSelection - 1 + MENU_OPTIONS) % MENU_OPTIONS;
-            oledDisplayMenu(menuSelection, "Compass", "Level");
+            oledDisplayMenu(menuSelection, "Distance", "Level", "Compass");
             break;
             
         case BUTTON_DOWN_PRESSED:
             menuSelection = (menuSelection + 1) % MENU_OPTIONS;
-            oledDisplayMenu(menuSelection, "Compass", "Level");
+            oledDisplayMenu(menuSelection, "Distance", "Level", "Compass");
             break;
             
         case BUTTON_ENTER_PRESSED:
             if (menuSelection == 0) {
-                currentMode = MODE_COMPASS;
+                currentMode = MODE_DISTANCE;
             } else if (menuSelection == 1) {
                 currentMode = MODE_LEVEL;
+            } else if (menuSelection == 2) {
+                currentMode = MODE_COMPASS;
             }
             break;
             
@@ -86,12 +97,42 @@ void handleMenuMode() {
     }
 }
 
+void handleDistanceMode() {
+    ButtonState buttonState = buttonsRead();
+    
+    if (buttonState == BUTTON_ENTER_PRESSED) {
+        currentMode = MODE_MENU;
+        oledDisplayMenu(menuSelection, "Distance", "Level", "Compass");
+        return;
+    }
+    
+    unsigned long currentTime = millis();
+    if (currentTime - lastUpdateTime >= UPDATE_INTERVAL) {
+        lastUpdateTime = currentTime;
+        
+        uint16_t distance = vl53l0x_readDistance();
+        oledDisplayDistance(distance);
+        
+        if (distance > 0) {
+            Serial.print("Distance: ");
+            Serial.print(distance);
+            Serial.println(" mm");
+        } else {
+            static unsigned long lastErrorTime = 0;
+            if (currentTime - lastErrorTime > 1000) {
+                lastErrorTime = currentTime;
+                Serial.println("Distance: No reading");
+            }
+        }
+    }
+}
+
 void handleCompassMode() {
     ButtonState buttonState = buttonsRead();
     
     if (buttonState == BUTTON_ENTER_PRESSED) {
         currentMode = MODE_MENU;
-        oledDisplayMenu(menuSelection, "Compass", "Level");
+        oledDisplayMenu(menuSelection, "Distance", "Level", "Compass");
         return;
     }
     
@@ -126,7 +167,7 @@ void handleLevelMode() {
     
     if (buttonState == BUTTON_ENTER_PRESSED) {
         currentMode = MODE_MENU;
-        oledDisplayMenu(menuSelection, "Compass", "Level");
+        oledDisplayMenu(menuSelection, "Distance", "Level", "Compass");
         return;
     }
     
@@ -158,6 +199,10 @@ void loop() {
     switch (currentMode) {
         case MODE_MENU:
             handleMenuMode();
+            break;
+            
+        case MODE_DISTANCE:
+            handleDistanceMode();
             break;
             
         case MODE_COMPASS:
