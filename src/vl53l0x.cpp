@@ -7,52 +7,12 @@
 Adafruit_VL53L0X lox = Adafruit_VL53L0X();
 
 bool vl53l0x_init() {
-    // Enable VL53L0X by setting XSHUT pin HIGH
-    pinMode(VL53L0X_XSHUT_PIN, OUTPUT);
-    digitalWrite(VL53L0X_XSHUT_PIN, LOW);
-    delay(10);
-    digitalWrite(VL53L0X_XSHUT_PIN, HIGH);
-    delay(10);
-    
-    Serial.print("Initializing I2C on SDA: ");
-    Serial.print(I2C_SDA_PIN);
-    Serial.print(", SCL: ");
-    Serial.println(I2C_SCL_PIN);
-    
-    Wire.begin(I2C_SDA_PIN, I2C_SCL_PIN);
-    Wire.setClock(100000);
-    delay(100);
-    
-    Serial.println("Scanning I2C bus...");
-    byte error, address;
-    int nDevices = 0;
-    for (address = 1; address < 127; address++) {
-        Wire.beginTransmission(address);
-        error = Wire.endTransmission();
-        if (error == 0) {
-            Serial.print("I2C device found at address 0x");
-            if (address < 16) Serial.print("0");
-            Serial.print(address, HEX);
-            Serial.println();
-            nDevices++;
-        }
-    }
-    if (nDevices == 0) {
-        Serial.println("No I2C devices found!");
-    }
-    Serial.println("I2C scan complete");
-    delay(100);
-    
-    Serial.println("Starting VL53L0X sensor...");
-    delay(50);
+    // XSHUT pin and I2C are already configured in gpios_setup()
     if (!lox.begin()) {
-        Serial.println("Failed to initialize VL53L0X sensor!");
-        Serial.println("Check wiring and power supply");
+        Serial.println("VL53L0X disconnected");
         return false;
     }
-    delay(100);
-    
-    Serial.println("VL53L0X sensor initialized successfully!");
+    Serial.println("VL53L0X Connected");
     return true;
 }
 

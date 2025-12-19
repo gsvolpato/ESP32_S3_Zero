@@ -26,15 +26,14 @@ bool compassSetup() {
         uint8_t error = Wire.endTransmission();
         
         if (error == 0) {
-            Serial.print("Compass found at 0x");
-            Serial.println(compassAddress, HEX);
+            Serial.println(String("Compass Connected (0x") + String(compassAddress, HEX) + ")");
             found = true;
             break;
         }
     }
     
     if (!found) {
-        Serial.println("Compass not found on I2C");
+        Serial.println("Compass Disconnected");
         isInitialized = false;
         isConnected = false;
         return false;
@@ -71,7 +70,7 @@ bool compassSetup() {
     error = Wire.endTransmission();
     
     if (error != 0) {
-        Serial.println("Compass: Config failed");
+        Serial.println("Compass Disconnected");
         isInitialized = false;
         isConnected = false;
         return false;
@@ -84,7 +83,7 @@ bool compassSetup() {
     
     delay(100);
     
-    Serial.println("Compass initialized");
+    Serial.println("Compass Connected");
     return true;
 }
 
